@@ -6,14 +6,23 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install system dependencies for mysqlclient and build tools
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       build-essential \
+       pkg-config \
+       default-libmysqlclient-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy project
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
+
+# Copy project files
 COPY . .
 
-# Collect static files (ignore errors if not configured yet)
+# Collect static files
 RUN python manage.py collectstatic --noinput || true
 
 # Start with Gunicorn
